@@ -1,0 +1,67 @@
+name: Upsert to Qdrant with Metadata
+
+on:
+  workflow_call:
+
+jobs:
+  qdrant-upsert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install openai pdfplumber qdrant-client pymongo python-dotenv
+
+      - name: Set up environment variables
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
+        run: |
+          # Create an .env file with necessary credentials
+          echo "OPENAI_API_KEY=${OPENAI_API_KEY}" > .env
+          echo "QDRANT_URL=${QDRANT_URL}" >> .env
+          echo "QDRANT_API_KEY=${QDRANT_API_KEY}" >> .env
+          echo "MONGO_URI=${MONGO_URI}" >> .env
+          echo "MONGO_DB_NAME=${MONGO_DB_NAME}" >> .env
+          echo "username=${{ secrets.MONGO_USERNAME }}" >> .env
+          echo "Password=${{ secrets.MONGO_PASSWORD }}" >> .env
+
+      - name: Run Qdrant Upsert with Metadata
+        run: |
+          # Run the upsert script
+          python qdrant_upsert_with_meta_data.py
+          echo "Qdrant upsert completed successfully"
+
+      - name: Generate Completion Report
+        run: |
+          # Create a timestamp for the report
+          timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+          
+          # Create a completion report
+          echo "### Qdrant Upsert Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Timestamp: $timestamp" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: Complete" >> $GITHUB_STEP_SUMMARY
+          
+          # Add completion marker file
+          mkdir -p logs
+          echo "Qdrant upsert completed at $timestamp" > logs/last_upsert.log
+          
+          # Commit the completion log
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add logs/last_upsert.log
+          git commit -m "Update upsert completion log" || echo "No changes to commit"
+          git push 

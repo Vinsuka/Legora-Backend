@@ -1,0 +1,19 @@
+{
+    "compliance_clauses": [
+        {
+            "clause": "Objections to letters of administration must be filed within 67 days of publication",
+            "section": "Section 529 of Civil Procedure Code",
+            "importance": "The law states that this time frame is critical for maintaining jurisdiction."
+        },
+        {
+            "clause": "The court has the authority to recall letters of administration if it finds justification for it",
+            "section": "Section 537",
+            "importance": "The reasoning is that letters must not have been issued incorrectly or in circumstances that make them impractical."
+        },
+        {
+            "clause": "Applications for the cancellation or revocation of probate must demonstrate an interest in the deceased's estate",
+            "section": "Section 538",
+            "importance": "This requirement ensures that only relevant parties can challenge existing grants."
+        }
+    ]
+}

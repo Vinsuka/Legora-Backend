@@ -1,0 +1,13 @@
+.env
+__pycache__/
+output/
+.venv/
+venv/
+supreme-court/
+appeal-court/
+db/
+results/
+venv/
+LABOURACT/
+judgements/
+legora/

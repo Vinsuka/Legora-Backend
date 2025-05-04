@@ -1,0 +1,64 @@
+name: Process Court Data
+
+on:
+  workflow_call:
+
+jobs:
+  process-court-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Load environment variables
+        run: |
+          # Load environment variables from .env file
+          if [ -f .env ]; then
+            export $(cat .env | grep -v '^#' | xargs)
+          fi
+
+      - name: Process Appeal Court PDFs
+        run: |
+          # Run the appeal court processor script
+          python process_appeal_court_pdfs.py --dir ETL/scrapers/appeal-court
+
+      - name: Process Supreme Court PDFs
+        run: |
+          # Run the supreme court processor script
+          python process_supreme_court_pdfs.py --dir ETL/scrapers/supreme-court
+
+      - name: Verify Processing Results
+        run: |
+          # Check for processed files
+          results_count=$(find results -type f -name "*.json" | wc -l)
+          
+          echo "Processed documents: $results_count"
+          
+          # Create a summary
+          echo "### Processing Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Processed documents: $results_count" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if any files were processed
+          if [ "$results_count" -eq 0 ]; then
+            echo "Warning: No documents were processed. Please check the PDF files and processing scripts."
+            echo "⚠️ No documents were processed. Please check the PDF files and processing scripts." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Commit processing results
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add results/
+          git commit -m "Add processed court data" || echo "No new processed data to commit"
+          git push 

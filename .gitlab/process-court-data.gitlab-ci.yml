@@ -1,0 +1,42 @@
+.process-court-data:
+  stage: Process Court Data
+  image: python:3.11
+  timeout: 20h
+  tags:
+    - legora
+  before_script:
+    - python -m pip install --upgrade pip
+    - python3.11 -m venv legora
+    - source legora/bin/activate
+    - pip install python-dotenv pyyaml crewai crewai-tools pandas pydantic PyPDF2 langchain 
+    - |
+      if [ -f .env ]; then
+        export $(cat .env | grep -v '^#' | xargs)
+      fi
+    - git config --global user.name "Vinsuka"
+    - git config --global user.email "dunith.20200471@iit.ac.lk"
+    - echo "OPENAI_API_KEY - ${OPENAI_API_KEY}"
+    - export OPENAI_API_KEY=${OPENAI_API_KEY}
+    - year=$(date +%Y)
+    - month=$(date +%m)
+  after_script:
+    - echo "Committing changes"
+    - git add results/
+    # - git commit -m "Commit changes after processing court data" || echo "No changes to commit"
+    # - git push https://oauth2:$GITLAB_TOKEN@gitlab.com/shakthiraveen2002/Legora-standord.git HEAD:$CI_COMMIT_REF_NAME || echo "No changes to push"
+
+process-appeal-court:
+  extends: .process-court-data
+  script:
+    - python process_appeal_court_pdfs.py --pdf-dir ETL/scrapers/appeal-court/${year} --results-dir results/appeal-court/${year} --skip-existing
+  artifacts:
+    paths:
+      - results/appeal-court
+
+process-supreme-court:
+  extends: .process-court-data
+  script:
+    - python process_supreme_court_pdfs.py --pdf-dir ETL/scrapers/supreme-court/${year} --results-dir results/supreme-court/${year} --skip-existing
+  artifacts:
+    paths:
+      - results/supreme-court

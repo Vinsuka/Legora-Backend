@@ -1,0 +1,141 @@
+name: Update JSON Files
+
+on:
+  workflow_call:
+
+jobs:
+  update-json-files:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Calculate previous month
+        id: date
+        run: |
+          python -c "
+          import datetime as dt
+          import json
+          
+          # Get the current date
+          now = dt.datetime.now()
+          
+          # Get the previous month (or current month if today is the 1st)
+          if now.day == 1:
+            prev_month = now.replace(day=1)
+          else:
+            # Subtract one day from the first day of current month to get last day of previous month
+            last_day_of_prev_month = now.replace(day=1) - dt.timedelta(days=1)
+            # Set to first day of that month
+            prev_month = last_day_of_prev_month.replace(day=1)
+          
+          # Output the year and month
+          result = {'year': prev_month.year, 'month': prev_month.month}
+          
+          # Set the output for GitHub Actions
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            f.write(f'year={result[\"year\"]}\n')
+            f.write(f'month={result[\"month\"]}\n')
+            
+          # Output for verification
+          print(f'Previous month: {prev_month.year}-{prev_month.month:02d}')
+          print(json.dumps(result))
+          "
+
+      - name: Update Appeal Court JSON
+        run: |
+          python -c "
+          import json
+          import os
+          
+          # Get year and month from environment variables
+          year = int(os.environ['YEAR'])
+          month = int(os.environ['MONTH'])
+          
+          # Load the appeal court JSON file
+          with open('ETL/scrapers/appeal-court-pages.json', 'r') as f:
+            appeal_data = json.load(f)
+          
+          # Check if the entry already exists
+          exists = any(item for item in appeal_data if item['year'] == year and item['month'] == month)
+          
+          if not exists:
+            # Note: In a real implementation, we would need to determine the actual page_id for the new month
+            # For this example, we're using a placeholder value of 99999 which should be replaced
+            # with real logic to determine the correct page_id
+            new_entry = {
+              'page_id': 99999,  # Placeholder - this needs to be determined programmatically or manually
+              'year': year,
+              'month': month
+            }
+            
+            # Add the new entry to the beginning of the list
+            appeal_data.insert(0, new_entry)
+            
+            # Save the updated file
+            with open('ETL/scrapers/appeal-court-pages.json', 'w') as f:
+              json.dump(appeal_data, f, indent=4)
+            
+            print(f'Added new entry for Appeal Court: Year {year}, Month {month}')
+          else:
+            print(f'Entry already exists for Appeal Court: Year {year}, Month {month}')
+          "
+        env:
+          YEAR: ${{ steps.date.outputs.year }}
+          MONTH: ${{ steps.date.outputs.month }}
+
+      - name: Update Supreme Court JSON
+        run: |
+          python -c "
+          import json
+          import os
+          
+          # Get year and month from environment variables
+          year = int(os.environ['YEAR'])
+          month = int(os.environ['MONTH'])
+          
+          # Load the supreme court JSON file
+          with open('ETL/scrapers/suprime_court_pages.json', 'r') as f:
+            supreme_data = json.load(f)
+          
+          # Check if the entry already exists
+          exists = any(item for item in supreme_data if item['year'] == year and item['month'] == month)
+          
+          if not exists:
+            # Note: In a real implementation, we would need to determine the actual page_id for the new month
+            # For this example, we're using a placeholder value of 99999 which should be replaced
+            # with real logic to determine the correct page_id
+            new_entry = {
+              'page_id': 99999,  # Placeholder - this needs to be determined programmatically or manually
+              'year': year,
+              'month': month
+            }
+            
+            # Add the new entry to the beginning of the list
+            supreme_data.insert(0, new_entry)
+            
+            # Save the updated file
+            with open('ETL/scrapers/suprime_court_pages.json', 'w') as f:
+              json.dump(supreme_data, f, indent=4)
+            
+            print(f'Added new entry for Supreme Court: Year {year}, Month {month}')
+          else:
+            print(f'Entry already exists for Supreme Court: Year {year}, Month {month}')
+          "
+        env:
+          YEAR: ${{ steps.date.outputs.year }}
+          MONTH: ${{ steps.date.outputs.month }}
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add ETL/scrapers/appeal-court-pages.json ETL/scrapers/suprime_court_pages.json
+          git commit -m "Update JSON files with data for ${{ steps.date.outputs.year }}-${{ steps.date.outputs.month }}" || echo "No changes to commit"
+          git push 

@@ -1,0 +1,11 @@
+stages:
+  - Update JSON Files
+  - Scrape the Court Data
+  - Process Court Data
+  - Upsert to Qdrant
+
+include:
+  - local: '.gitlab/update-json-files.gitlab-ci.yml'
+  - local: '.gitlab/court-scrapers.gitlab-ci.yml'
+  - local: '.gitlab/process-court-data.gitlab-ci.yml'
+  - local: '.gitlab/upsert-to-qdrant.gitlab-ci.yml'

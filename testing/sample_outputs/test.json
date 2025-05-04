@@ -1,0 +1,25 @@
+{
+    "pdf_file_name": "sc_appeal_04_2007.pdf",
+    "case_type": "civil",
+    "case_name": "S. Albert & Co. and S. Sivakumar",
+    "case_number": "",
+    "judges": [
+        "S. Thurairaja",
+        "A.L. Shiran Gooneratne",
+        "Janak De Silva"
+    ],
+    "case_subtypes": [
+        "Contract Dispute"
+    ],
+    "court": "Appeal Court",
+    "outcome_tags": [
+        "settlement"
+    ],
+    "labor_tags": [],
+    "summary": "The Supreme Court ruled in favor of the appellants in a debt recovery case, emphasizing that an acknowledgment of debt (P7) revives the claim despite limitations. The prior court's dismissal due to prescription was overturned, allowing the appellants to reclaim USD 54,875 with costs awarded.",
+    "complianceList": [
+        "Compliance 01: The letter dated 21.08.2000 marked P7 sent by the Respondent to the Appellants amounts to an acknowledgment of liability in writing to pay the sum claimed for in the prayer to the Plaint.",
+        "Compliance 02: The action of the Appellants must be based on the two invoices P2 and P4 and not solely on P7 because the original debt is not extinguished by the lapse of time.",
+        "Compliance 03: An acknowledgment of the debt made in this matter by P7 is valid and effective to start time running again, even though it was made after the original action on the debt was barred by the provisions of the Prescription Ordinance."
+    ]
+}

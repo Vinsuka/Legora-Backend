@@ -1,0 +1,29 @@
+name: Legal Document Processing Pipeline
+
+on:
+  schedule:
+    # Run monthly on the 1st day of each month at 00:00 UTC
+    - cron: '0 0 1 * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  update-json:
+    name: Update JSON Files
+    uses: ./.github/workflows/jobs/update-json.yml
+  
+  run-scrapers:
+    name: Run Court Scrapers
+    needs: update-json
+    uses: ./.github/workflows/jobs/run-scrapers.yml
+  
+  process-court-data:
+    name: Process Court Data
+    needs: run-scrapers
+    uses: ./.github/workflows/jobs/process-court-data.yml
+  
+  qdrant-upsert:
+    name: Upsert to Qdrant with Metadata
+    needs: process-court-data
+    uses: ./.github/workflows/jobs/qdrant-upsert.yml 

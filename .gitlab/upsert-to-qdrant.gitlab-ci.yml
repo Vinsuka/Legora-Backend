@@ -1,0 +1,47 @@
+.qdrant-upsert-base:
+  stage: Upsert to Qdrant
+  image: python:3.11
+  tags:
+    - legora
+  before_script:
+    - python -m pip install --upgrade pip
+    - python3.11 -m venv legora
+    - source legora/bin/activate
+    - pip install pdfplumber transformers torch python-dotenv qdrant-client tqdm openai pymongo
+    - git config --global user.name "Vinsuka"
+    - git config --global user.email "dunith.20200471@iit.ac.lk"
+    - |
+      echo "OPENAI_API_KEY=${OPENAI_API_KEY}" > .env
+      echo "QDRANT_URL=${QDRANT_URL}" >> .env
+      echo "QDRANT_API_KEY=${QDRANT_API_KEY}" >> .env
+      echo "MONGO_URI=${MONGO_URI}" >> .env
+      echo "MONGO_DB_NAME=${MONGO_DB_NAME}" >> .env
+      echo "username=${MONGO_USERNAME}" >> .env
+      echo "Password=${MONGO_PASSWORD}" >> .env
+  after_script:
+    - echo "Committing changes"
+    - git add logs/last_upsert.log
+    - git commit -m "Update upsert completion log" || echo "No changes to commit"
+    - git push https://oauth2:$GITLAB_TOKEN@gitlab.com/shakthiraveen2002/Legora-standord.git HEAD:$CI_COMMIT_REF_NAME || echo "No changes to push"
+
+qdrant-upsert:
+  extends: .qdrant-upsert-base
+  variables:
+    OPENAI_API_KEY: ${OPENAI_API_KEY}
+    QDRANT_URL: ${QDRANT_URL}
+    QDRANT_API_KEY: ${QDRANT_API_KEY}
+    MONGO_URI: ${MONGO_URI}
+    MONGO_DB_NAME: ${MONGO_DB_NAME}
+    MONGO_USERNAME: ${MONGO_USERNAME}
+    MONGO_PASSWORD: ${MONGO_PASSWORD} 
+  script:
+    - python testing/model_tests/upsert_to_qdrant.py
+    - echo "Qdrant upsert completed successfully"
+    
+    - local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    - echo "### Qdrant Upsert Completed"
+    - echo -e "Timestamp - ${timestamp}"
+    - echo -e "Status - Complete"
+
+    - mkdir -p logs
+    - echo "Qdrant upsert completed at $timestamp" > logs/last_upsert.log

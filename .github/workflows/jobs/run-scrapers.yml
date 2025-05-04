@@ -1,0 +1,62 @@
+name: Run Court Scrapers
+
+on:
+  workflow_call:
+
+jobs:
+  run-scrapers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run Appeal Court Scraper
+        run: |
+          cd ETL/scrapers
+          python appealcourt.py
+          echo "Appeal Court scraper completed"
+
+      - name: Run Supreme Court Scraper
+        run: |
+          cd ETL/scrapers
+          python supriecourt.py
+          echo "Supreme Court scraper completed"
+
+      - name: Verify Downloaded Files
+        run: |
+          # Check for downloaded files
+          appeal_count=$(find ETL/scrapers/appeal-court -type f -name "*.pdf" | wc -l)
+          supreme_count=$(find ETL/scrapers/supreme-court -type f -name "*.pdf" | wc -l)
+          
+          echo "Downloaded Appeal Court PDFs: $appeal_count"
+          echo "Downloaded Supreme Court PDFs: $supreme_count"
+          
+          # Create a summary
+          echo "### Scraper Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Appeal Court PDFs: $appeal_count" >> $GITHUB_STEP_SUMMARY
+          echo "- Supreme Court PDFs: $supreme_count" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if any files were downloaded
+          if [ "$appeal_count" -eq 0 ] && [ "$supreme_count" -eq 0 ]; then
+            echo "Warning: No PDF files were downloaded. Please check the JSON files and page IDs."
+            echo "⚠️ No PDF files were downloaded. Please check the JSON files and page IDs." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Commit downloaded PDFs
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add ETL/scrapers/appeal-court ETL/scrapers/supreme-court
+          git commit -m "Download new court PDFs from monthly scrape" || echo "No new PDFs to commit"
+          git push 

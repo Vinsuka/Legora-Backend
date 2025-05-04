@@ -1,0 +1,436 @@
+summarize_legal_document:
+  description: >
+    Read and analyze the legal judgment document in this location: {input_file_path}.
+    Identify and summarize the following key elements:
+      - **Case Background:** Include the parties involved, the core legal issue, and the lower court's decision.
+      - **Charges & Legal Basis:** Outline the specific charges, relevant laws, and legal provisions applied.
+      - **Appellant's Arguments:** Summarize the main points raised by the appellant in seeking relief or contesting the decision.
+      - **Respondents' Defense:** Briefly capture the counterarguments or justification given by the prosecution or respondents.
+      - **Court's Analysis & Ruling:** Summarize the higher court's reasoning, key legal interpretations, and the final decision.
+      
+    The summary must be **concise, fact-based, and neutral**, avoiding unnecessary details or subjective opinions.
+    Ensure clarity while maintaining legal accuracy.
+  expected_output: >
+    - The summary should be presented as a **single paragraph**.
+    - Maximum **50 words**.
+    - No introductory phrases, markdown, or bullet points.
+
+classify_legal_document:
+  description: >
+      Analyze the legal judgment provided in the file located at: {input_file_path}.
+      The document does not explicitly state whether it is a **Civil** or **Criminal** case.
+      You must determine its classification based on **context, legal principles, and case characteristics**.
+      Strictly classify the document as either **"Civil"** or **"Criminal"**, with no other outputs.
+
+      **Classification Criteria:**
+      🔹 **Criminal Cases:**
+      - Involves an offense against the **state, public, or society**, rather than a private dispute.
+      - Typically prosecuted by the **government** (e.g., state, national authorities).
+      - Remedies involve **punishment**, such as imprisonment, fines, or probation.
+      - Common examples:
+        - **Violent Crimes:** Murder, assault, kidnapping.
+        - **Property Crimes:** Theft, burglary, arson.
+        - **White-Collar Crimes:** Fraud, identity theft.
+        - **Cyber Crimes:** Hacking, online fraud.
+        - **Drug-Related Offenses:** Trafficking, possession.
+        - **Traffic Offenses:** Reckless driving causing harm.
+        - **Sex Crimes:** Assault, harassment.
+        - **Public Order Crimes:** Rioting, illegal possession of weapons.
+
+      🔹 **Civil Cases:**
+      - Involves disputes between **private parties** (individuals, businesses, organizations).
+      - The government is **not** the prosecuting party.
+      - Remedies typically involve **monetary compensation, injunctions, or enforcement of rights**.
+      - Common examples:
+        - **Contract Disputes:** Breach of contract, business disputes.
+        - **Property Disputes:** Land ownership, rental issues.
+        - **Family Law:** Divorce, child custody, adoption.
+        - **Torts (Personal Injury):** Medical malpractice, defamation.
+        - **Employment Disputes:** Discrimination, wrongful termination.
+        - **Corporate Law:** Shareholder disputes, intellectual property.
+        - **Inheritance & Probate:** Wills, trust disputes.
+
+      **Special Instructions:**
+      - If a case has **both Civil and Criminal elements**, classify it based on the **predominant legal focus**.
+      - Focus on **remedies sought** (punishment vs. compensation) to determine classification.
+      - Follow a **strict binary classification** with no ambiguous or mixed results.
+  expected_output: >
+      Output must be a **single word**: either **"Criminal"** or **"Civil"**.
+      No explanations, confidence scores, or additional text—just the classification.
+
+extract_legal_metadata:
+  description: >
+    Read and analyze a legal judgment document (PDF) and extract structured metadata based on predefined categories.  
+    The document text is extracted in a previous OCR processing step.  
+    Ensure accurate classification and extraction while adhering to the specified format.
+
+    **Extraction Rules:**
+    - **Case Name**: Extract the official case name. Return as a string.
+    - **Case Number**: Extract the unique case identifier. Return as a string.
+    - **Judges**: Extract all judges mentioned in the document. Return as a list. If unknown, return `[]`.
+    - **Case Subtypes**:
+      - Identify if the case falls under **"Civil"** or **"Criminal"** based on context.
+      - Extract specific subtypes:
+        - For **Civil**: `"Family Law"`, `"Contract Dispute"`, `"Property Law"`.
+        - For **Criminal**: `"Theft"`, `"Fraud"`, `"Assault"`.
+      - Return a list of applicable subtypes. If no subtype is found, return `[]`.
+    - **Court**:
+      - Extract the court name and map it to either **"Supreme Court"** or **"Appeal Court"**.
+      - If no court name is explicitly mentioned, return an empty string `""`.
+      - If Document Mention "IN THE COURT OF APPEAL OF THE DEMOCRATIC SOCIALIST REPUBLIC OF SRI LANKA" return "Appeal Court"
+      - If Document Mention "IN THE SUPREME COURT OF THE DEMOCRATIC SOCIALIST REPUBLIC OF SRI LANKA" return "Supreme Court"
+    - **Outcome Tags**: Extract inferred case outcomes (e.g., `"conviction"`, `"acquittal"`, `"fine imposed"`, `"settlement"`). Return as a list.
+    - **Labor Tags**: Identify and extract mentions of employment law, labor law compliance, contractual obligations, and any related legal aspects, including taxation, workplace regulations, benefits, dispute resolution, and industry-specific compliance. Capture all relevant clauses and categorize them under appropriate tags dynamically based on context, without. Ensure flexibility in recognizing various aspects such as hiring, wages, benefits, taxation, workplace policies, termination, discrimination, health & safety, and any other applicable legal provisions. If no relevant terms are found, return [].
+
+    **Handling Missing Data:**
+    - If a **single-value field** (e.g., `case_name`, `case_number`) is unknown, return `""`.
+    - If a **multi-value field** (e.g., `judges`, `case_subtypes`, `outcome_tags`, `labor_tags`) has no extracted data, return `[]`.
+    - Ensure **all fields are always present** in the structured output.
+  expected_output: >
+    A structured JSON object with the extracted metadata:
+    ```json
+    {{
+      "case_name": "case_name_value",
+      "case_number": "case_number_value",
+      "judges": ["judge1", "judge2"],
+      "case_subtypes": ["subtype1", "subtype2"],
+      "court": "court_name_value",
+      "outcome_tags": ["outcome1", "outcome2"],
+      "labor_tags": ["employment", "recruitment"]
+    }}
+    ```
+
+extract_legal_compliance:
+  description: >
+    Read and analyze the provided legal judgment document in this location: {input_file_path} and extract all enforceable compliance-related clauses, along with the court's reasoning.
+
+    **Instructions:**
+    - Identify and extract legally enforceable compliance clauses from the judgment.
+    - Focus on **legal obligations, penalties, regulatory actions, and specific compliance directives** imposed by the court.
+    - Include judicial interpretations that impact compliance standards.
+    - Ignore procedural aspects and focus **only** on compliance-related obligations.
+
+    **Each extracted compliance clause must include:**
+    - **The exact legal requirement or obligation.**
+    - **The reasoning behind the clause, as stated in the judgment.**
+    - Maintain **clarity and accuracy**, ensuring the reasoning is **concise but legally precise**.
+
+    **Output Format:**
+    - Return a structured list of compliance clauses using the following format:
+      ```json
+      {{
+        "Compliance 01": "Legal requirement - Reasoning",
+        "Compliance 02": "Legal requirement - Reasoning",
+        "Compliance 03": "Legal requirement - Reasoning"
+      }}
+      ```
+    - If no compliance clauses are found, return an **empty list (`[]`)**.
+
+  expected_output: >
+    A structured list of compliance directives extracted from the judgment document.
+    If no compliance obligations are found, return an empty list.
+
+generate_legal_json:
+  description: >
+    Read and analyze the provided legal judgment document and extract structured case details in JSON format.  
+    The document text has already been processed through OCR.  
+
+    **Extraction Rules:**
+    - **pdf_file_name**: Extract the source PDF file name from `{input_pdf_path}`.
+    - **case_type**: Determine whether the case is `"civil"` or `"criminal"` based on legal context.
+    - **case_name**: Extract the official case name. If unknown, return `""`.
+    - **case_number**: Extract the official case number. If unknown, return `""`.
+    - **judges**: Extract all judges involved. Return as a list; if none, return `[]`.
+    - **case_subtype**: Identify more specific classifications:
+      - Civil: `"Family Law"`, `"Contract Dispute"`, `"Property Law"`.
+      - Criminal: `"Theft"`, `"Fraud"`, `"Assault"`.
+      - Return a list of applicable subtypes or `[]` if none found.
+    - **court**: Strictly extract `"Supreme Court"` or `"Appeal Court"` if explicitly mentioned; otherwise, return `""`.
+    - **outcome_tags**: Identify inferred case outcomes (`"conviction"`, `"acquittal"`, `"fine imposed"`, `"settlement"`).
+      - Use extracted data from **metadata extraction**.
+      - Return as a list or `[]` if none found.
+    - **labor_tags**: Identify mentions of employment-related legal issues.
+      - Use extracted data from **metadata extraction**.
+      - Return applicable tags from `["employment", "administration", "recruitment"]`, or `[]` if none found.
+    - **summary**: Generate a **50-word summary** of the judgment, focusing on key legal findings.
+    - **complianceList**: Extract compliance directives from the judgment.
+      - Identify **explicit legal references** (e.g., `"Section X of Y Act"`).
+      - Return a structured list or `[]` if none found.
+
+    **Handling Missing Data:**
+    - Ensure **all fields** are present in the JSON object.
+    - Return `""` for missing string values and `[]` for missing list values.
+
+    **File Handling:**
+    - If `{should_append}` is `true`, merge new case data with the existing JSON file.
+    - If a case with the same `case_number` already exists, **update the existing entry** instead of duplicating it.
+    - Save the structured JSON to `{output_file_path}`.
+
+  expected_output: >
+    A properly formatted JSON file with structured legal case details:
+    ```json
+    {{
+      "pdf_file_name": "/var/folders/0w/hjt_r4g56ydclymgs_ts5zzr0000gn/T/tmp4l5yyu60/sc_hc_cala_351_2022.txt",
+      "case_type": "civil",
+      "case_name": "Soma Weerasinghe v. Leela Edirisinghe et al.",
+      "case_number": "SC/HC CA/LA/No. 351/2022",
+      "judges": ["P. Padman Surasena", "E. A. G. R. Amarasekera", "Kumudini Wickremasinghe"],
+      "case_subtype": ["property dispute"],
+      "court": "Supreme Court",
+      "outcome_tags": ["conviction", "acquittal", "fine imposed", "settlement"],
+      "labor_tags": ["employment", "administration"],
+      "summary": "Soma Weerasinghe challenged the dismissal of an appeal regarding property issues, which the Supreme Court found erroneous, instructing a reevaluation by the lower court under the Partition Act and Civil Procedure Code.",
+      "complianceList": [
+        "Compliance 01: Under Section 81(9) of the Partition Act, any judgment or decree entered in action shall be deemed valid and effective, even if a party has failed to file a memorandum; this binds the legal heirs despite the absence of a legal representative.",
+        "Compliance 02: Section 759(2) of the Civil Procedure Code permits the Appellate Court to grant relief for mistakes or defects in compliance if the respondent is not materially prejudiced."
+      ]
+    }}
+    ```
+
+agreement_summarizer_task:
+  description: >
+    Read and analyze the agreement document located at `{input_file_path}` and generate a simplified summary highlighting key contractual clauses.
+
+    **Summarization Rules:**
+    - Extract and summarize **key clauses** from the agreement, focusing on:
+      - **Parties Involved**: Identify the entities or individuals bound by the contract.
+      - **Obligations**: Outline the key responsibilities of each party.
+      - **Duration & Termination**: Summarize the agreement's validity period and termination conditions.
+      - **Payment & Liabilities**: Highlight financial obligations, penalties, or liabilities if applicable.
+      - **Confidentiality & Non-Disclosure**: Mention if the agreement includes confidentiality clauses.
+      - **Dispute Resolution**: Note any specified mechanisms (e.g., arbitration, litigation).
+    - The summary should be **simplified for easy understanding** while maintaining legal accuracy.
+    - Use a **mixed approach**: paraphrase most content but retain **direct quotes** where they add clarity.
+    - Maintain a **concise paragraph format** (around **100-150 words**).
+
+    **Handling Missing Data:**
+    - If specific clauses are missing in the agreement, **omit them** from the summary rather than assuming or inferring details.
+    - Ensure the summary remains structured and coherent even if certain elements are absent.
+  expected_output: >
+    A structured, paragraph-form summary (100-150 words) covering key contractual clauses in a clear and concise manner.
+
+
+agreement_clause_extractor_task:
+  description: >
+    Read and analyze the agreement document located at `{input_file_path}` and extract all key clauses relevant for compliance.
+
+    **Extraction Rules:**
+    - Extract **all clauses** necessary for compliance.
+    - Capture the **exact text** of each clause (**direct quotes only**, no paraphrasing).
+    - Structure the output in **JSON format**, ensuring each clause includes:
+      - **title**: The name or type of the clause (if identifiable).
+      - **text**: The full extracted clause text.
+    - If a clause (e.g., **Termination Clause**) is missing, return a **placeholder**: `"Termination Clause: Not mentioned"`.
+
+    **Handling Missing Data:**
+    - If a clause is **not explicitly mentioned**, include a placeholder instead of inferring details.
+    - Ensure all extracted clauses are presented in a **structured format**.
+  expected_output: >
+    A structured JSON object containing all extracted compliance-related clauses:
+    ```json
+    {
+      "pdf_file_name": "{input_file_path}",
+      "clauses": [
+        {
+          "title": "Confidentiality Clause",
+          "text": "Both parties agree not to disclose confidential information to third parties..."
+        },
+        {
+          "title": "Payment Terms",
+          "text": "The total payment of $50,000 shall be made in three installments over 90 days..."
+        },
+        {
+          "title": "Termination Clause",
+          "text": "Termination Clause: Not mentioned"
+        }
+      ]
+    }
+    ```
+
+legal_clause_validator_task:
+  description: >
+    Validate the extracted clauses from the agreement document located at {input_file_path} to ensure compliance with employee contract standards.
+
+    **Validation Rules:**
+    - Validate **all clauses** necessary for employee contract compliance.
+    - Assess whether each clause is **contextually valid** based on contract standards.
+    - Assign a **validation status** to each clause:
+      - `"Valid"` - Clause meets compliance standards.
+      - `"Missing Key Details"` - Clause lacks essential information.
+      - `"Legally Ambiguous"` - Clause is unclear or open to misinterpretation.
+    - **Do not** provide explanations for validation failures—only assign a validation status.
+
+    **Handling Missing Data:**
+    - If a clause is **not explicitly mentioned**, categorize it as `"Missing Key Details"`.
+    - Ensure all validated clauses are structured properly in the output.
+  expected_output: >
+    A structured JSON object listing validated clauses:
+    ```json
+    {
+      "pdf_file_name": "{input_file_path}",
+      "validated_clauses": [
+        {
+          "title": "Confidentiality Clause",
+          "text": "Both parties agree not to disclose confidential information to third parties...",
+          "validation_status": "Valid"
+        },
+        {
+          "title": "Termination Clause",
+          "text": "Termination Clause: Not mentioned",
+          "validation_status": "Missing Key Details"
+        },
+        {
+          "title": "Payment Terms",
+          "text": "The total payment shall be made as per company policy...",
+          "validation_status": "Legally Ambiguous"
+        }
+      ]
+    }
+    ```
+
+create_vector_query_task:
+  description: >
+    Create a vector query to search for relevant legal precedents in the vector database.
+  expected_output: >
+    A vector query to search for relevant legal precedents in the vector database.
+
+supreme_court_judgements_extractor_task:
+  description: >
+    Read and analyze the Supreme Court judgment document located at `{input_file_path}` and generate a **detailed** summary covering all critical aspects of the case.
+
+    **Extraction Guidelines:**
+    - Provide an **in-depth summary** of the judgment, covering:
+      - **Case Background**: Identify the parties involved, the context of the dispute, and any lower court rulings.
+      - **Key Legal Issues**: Explain the central legal questions and constitutional matters under review.
+      - **Arguments Presented**: Summarize the arguments made by both the petitioner and respondent.
+      - **Court's Reasoning**: Detail the legal reasoning, precedents referenced, and judicial interpretations.
+      - **Final Ruling**: Clearly state the court's decision and any legal consequences.
+      - **Impact & Precedent**: Discuss the broader implications of the ruling for future legal cases and policies.
+    - The summary should be **comprehensive**, with no strict word limit, ensuring clarity and legal precision.
+    - Use **well-structured paragraphs** instead of bullet points or JSON format.
+    - If any key detail is missing from the judgment, acknowledge its absence instead of assuming information.
+  expected_output: >
+    A **detailed narrative summary** of the Supreme Court judgment, structured in paragraphs, covering all key aspects of the case.
+
+appeal_court_judgements_extractor_task:
+  description: >
+    Read and analyze the Appeal Court judgment document located at {input_file_path} and generate a **detailed** summary covering all critical aspects of the case.
+
+    **Extraction Guidelines:**
+    - Provide an **in-depth summary** of the judgment, covering:
+      - **Case Background**: Identify the parties involved, the nature of the dispute, and the lower court’s ruling.
+      - **Key Legal Issues**: Explain the central legal questions and constitutional matters under review.
+      - **Arguments Presented**: Summarize the arguments made by both the appellant and respondent.
+      - **Appeal Court’s Reasoning**: Detail the legal reasoning, precedents referenced, and judicial interpretations.
+      - **Final Ruling**: Clearly state whether the Appeal Court upheld, modified, or overturned the lower court’s decision.
+      - **Impact & Precedent**: Discuss the broader implications of the ruling for future legal cases and policies.
+    - The summary should be **comprehensive**, with no strict word limit, ensuring clarity and legal precision.
+    - Use **well-structured paragraphs** instead of bullet points or JSON format.
+    - If any key detail is missing from the judgment, acknowledge its absence instead of assuming information.
+  expected_output: >
+    A **detailed narrative summary** of the Appeal Court judgment, structured in paragraphs, covering all key aspects of the case.
+    
+law_knowledge_base_extractor_task:
+  description: >
+    Read and analyze the agreement document located at `{input_file_path}` and extract all key clauses relevant for compliance.
+    Extract relevant information from the law knowledge base in this location: {input_file_path} that can be used for backing the compliance of the agreement located at {input_file_path}.
+
+    **Extraction Guidelines:**
+    - Extract **all relevant information** from the law knowledge base.
+    - Structure the output in **JSON format**, ensuring each clause includes:
+      - **title**: The name or type of the clause (if identifiable).
+      - **text**: The full extracted clause text.
+      - **relevance**: The relevance of the clause to the agreement located at {input_file_path}.
+    - If any key detail is missing from the law knowledge base, acknowledge its absence instead of assuming information.
+  expected_output: >
+    A **detailed narrative summary** of the sri lankan laws that are relevant to the agreement located at {input_file_path}, structured in paragraphs, covering all key aspects of the case.
+
+extracted_data_validator_task:
+  description: >
+    Read and validate the extracted data from legal precedents located at `{input_file_path}` to ensure accuracy and completeness.
+
+    **Validation Guidelines:**
+    - Review and validate **all extracted data** from legal precedents.
+    - Assess whether each field is **contextually accurate and complete** based on legal standards.
+    - Assign a **validation status** to each extracted field:
+      - `"Valid"` - Data is accurate and complete.
+      - `"Missing Key Details"` - Important information is missing.
+      - `"Legally Ambiguous"` - Data is unclear or open to misinterpretation.
+    - If a required field (e.g., case name, case number) is missing, acknowledge its absence instead of omitting it.
+    - **Do not** provide explanations for validation failures—simply indicate the status.
+    - Ensure the validation feedback is **detailed and structured**, but in a narrative format rather than a structured JSON output.
+
+  expected_output: >
+    A **detailed narrative validation report**, structured in paragraphs, that assesses the extracted data's accuracy, completeness, and legal clarity.
+
+final_compliance_reporte_creation_task:
+  description: >
+    Generate a **detailed and structured compliance report** based on extracted data from Supreme Court judgments, Appeal Court judgments, and the Legal Laws and Regulations Knowledgebase for the agreement located at {input_file_path}.
+
+    **Report Generation Guidelines:**
+    - Analyze extracted data to determine compliance with relevant legal standards.
+    - Flag **missing compliance elements** and indicate their absence in the report.
+    - Categorize compliance issues based on **severity levels**:
+      - `"Critical"` - Non-compliance with serious legal consequences.
+      - `"Moderate"` - Non-compliance with potential legal or regulatory risks.
+      - `"Minor"` - Non-compliance with minimal impact but requiring attention.
+    - For each compliance check, **cite the source** used for validation (e.g., Supreme Court ruling, legal regulation, or precedent).
+    - Ensure the report maintains **a structured, markdown-formatted format** for clarity and readability.
+
+    **Markdown Report Template:**
+    # Compliance Report
+
+    ## 1. Overview
+    **Generated On:** {{report_date}}  
+    **Sources Used:**  
+    - **Legal Laws Knowledgebase:** Documents referenced - {{legal_docs_referenced}}  
+    - **Supreme Court Judgments:** Cases reviewed - {{supreme_court_cases_referenced}}  
+    - **Appeal Court Judgments:** Cases reviewed - {{appeal_court_cases_referenced}}  
+
+    ---
+
+    ## 2. Compliance Assessment
+
+    ### **Critical Compliance Issues**
+    **These violations have serious legal consequences and require immediate action.**  
+    - **Issue:** {{critical_non_compliance_1}}  
+      - **Source:** {{critical_non_compliance_source_1}}  
+      - **Status:** Non-Compliant  
+
+    - **Issue:** {{critical_non_compliance_2}}  
+      - **Source:** {{critical_non_compliance_source_2}}  
+      - **Status:** Non-Compliant  
+
+    ---
+
+    ### **Moderate Compliance Issues**
+    **These violations pose regulatory risks and should be addressed soon.**  
+    - **Issue:** {{moderate_non_compliance_1}}  
+      - **Source:** {{moderate_non_compliance_source_1}}  
+      - **Status:** Partially Compliant  
+
+    ---
+
+    ### **Minor Compliance Issues**
+    **These are minor concerns that should be monitored for future compliance.**  
+    - **Issue:** {{minor_non_compliance_1}}  
+      - **Source:** {{minor_non_compliance_source_1}}  
+      - **Status:** Compliant  
+
+    ---
+
+    ## 3. Recommended Actions
+
+    - **For Critical Issues:** Immediate legal review and corrective actions are required.  
+    - **For Moderate Issues:** Review compliance policies and update legal frameworks.  
+    - **For Minor Issues:** Monitor and ensure adherence in future compliance checks.  
+
+    ---
+
+    ## 4. Conclusion  
+    Based on the extracted legal data, the overall compliance status is **{{overall_compliance_status}}**.  
+
+  expected_output: >
+    A **well-structured markdown report** summarizing the compliance status, listing issues with severity levels, referencing legal sources, and providing recommendations for corrective actions.
+    Please re-validate that the report is following the correct markdown syntaxes and is formatted correctly.
+    Don't include any other text, comments special characters in the start or the end of the report.

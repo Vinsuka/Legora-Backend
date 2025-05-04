@@ -1,0 +1,43 @@
+.scraper-base:
+  stage: Scrape the Court Data
+  image: python:3.11
+  tags:
+    - legora
+  before_script:
+    - python -m pip install --upgrade pip
+    - python3.11 -m venv legora
+    - source legora/bin/activate
+    - pip install requests beautifulsoup4
+    - git config --global user.name "Vinsuka"
+    - git config --global user.email "dunith.20200471@iit.ac.lk"
+  after_script:
+    - echo "Committing changes"
+    - git add .
+    - git commit -m "Commit changes after scraping" || echo "No changes to commit"
+    - git push https://oauth2:$GITLAB_TOKEN@gitlab.com/shakthiraveen2002/Legora-standord.git HEAD:$CI_COMMIT_REF_NAME || echo "No changes to push"
+
+run-appeal-court-scraper:
+  extends: .scraper-base
+  dependencies:
+    - update-appeal-court-json
+  script:
+    - echo "Running Appeal Court scraper"
+    - cd ETL/scrapers
+    - python appealcourt.py
+    - echo "Appeal Court scraper completed"
+  artifacts:
+    paths:
+      - ETL/scrapers/appeal-court
+
+run-supreme-court-scraper:
+  extends: .scraper-base
+  dependencies:
+    - update-supreme-court-json
+  script:
+    - echo "Running Supreme Court scraper"
+    - cd ETL/scrapers
+    - python supriecourt.py
+    - echo "Supreme Court scraper completed"
+  artifacts:
+    paths:
+      - ETL/scrapers/supreme-court
