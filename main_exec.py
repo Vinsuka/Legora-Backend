@@ -1,3 +1,4 @@
+from config.tools.fetch_data_tool import DocumentSearchTool
 import datetime
 from crewai import Agent, Crew, Task
 import yaml
@@ -95,6 +96,22 @@ qdrant = QdrantClient(
     api_key=os.getenv("QDRANT_API_KEY")
 )
 
+appeal_search_tool = DocumentSearchTool(
+    index_name="judgments-index",
+    environment="custom-embeddings", 
+    top_k=5,
+    similarity_threshold=0.7,
+    namespace="appeal_court"
+)
+
+supreme_search_tool = DocumentSearchTool(
+    index_name="judgments-index",
+    environment="custom-embeddings", 
+    top_k=5,
+    similarity_threshold=0.7,
+    namespace="supreme_court"
+)
+
 def get_openai_embedding(text):
     response = client.embeddings.create(
         input=text,
@@ -110,22 +127,6 @@ law_knowledge_base_collection_name = "legal-docs"
 pdf_path = "test_pdf/Nathaniel - Employment Agreement - Standord (1).pdf"
 
 pdf_search_tool = PDFSearchTool()
-
-qdrant_supreme_court_tool = QdrantVectorSearchTool(
-    qdrant_url=os.getenv("QDRANT_URL"),
-    qdrant_api_key=os.getenv("QDRANT_API_KEY"),
-    collection_name=supreme_court_collection_name,
-    limit=3,
-    score_threshold=0.35
-)
-
-qdrant_appeal_court_tool = QdrantVectorSearchTool(
-    qdrant_url=os.getenv("QDRANT_URL"),
-    qdrant_api_key=os.getenv("QDRANT_API_KEY"),
-    collection_name=appeal_court_collection_name,
-    limit=3,
-    score_threshold=0.35
-)
 
 law_knowledge_base = QdrantVectorSearchTool(
     qdrant_url=os.getenv("QDRANT_URL"),
@@ -192,7 +193,7 @@ create_vector_query_agent = Agent(
 
 supreme_court_judgements_extractor = Agent(
     config=agents_config['supreme_court_judgements_extractor'],
-    tools=[qdrant_supreme_court_tool],
+    tools=[supreme_search_tool],
     verbose=True,
     llm="gpt-4o-mini",
     max_retry_limit=3
@@ -200,7 +201,7 @@ supreme_court_judgements_extractor = Agent(
 
 appeal_court_judgements_extractor = Agent(
     config=agents_config['appeal_court_judgements_extractor'],
-    tools=[qdrant_appeal_court_tool],
+    tools=[appeal_search_tool],
     verbose=True,
     llm="gpt-4o-mini",
     max_retry_limit=3
@@ -265,7 +266,7 @@ create_vector_query_task = Task(
 supreme_court_judgements_extractor_task = Task(
     config=tasks_config['supreme_court_judgements_extractor_task'],
     agent=supreme_court_judgements_extractor,
-    tools=[qdrant_supreme_court_tool],
+    tools=[supreme_search_tool],
     context=[
         create_vector_query_task
     ],
@@ -275,7 +276,7 @@ supreme_court_judgements_extractor_task = Task(
 appeal_court_judgements_extractor_task = Task(
     config=tasks_config['appeal_court_judgements_extractor_task'],
     agent=appeal_court_judgements_extractor,
-    tools=[qdrant_appeal_court_tool],
+    tools=[appeal_search_tool],
     context=[
         create_vector_query_task
     ],
